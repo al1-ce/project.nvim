@@ -41,12 +41,12 @@ function M.find_pattern_root()
   local last_dir_cache = ""
   local curr_dir_cache = {}
 
-  local function get_parent(path)
-    path = path:match("^(.*)/")
-    if path == "" then
-      path = "/"
+  local function get_parent(path_str)
+    path_str = path_str:match("^(.*)/")
+    if path_str == "" then
+      path_str = "/"
     end
-    return path
+    return path_str
   end
 
   local function get_files(file_dir)
@@ -74,22 +74,21 @@ function M.find_pattern_root()
   end
 
   local function sub(dir, identifier)
-    local path = get_parent(dir)
+    local path_str = get_parent(dir)
     while true do
-      if is(path, identifier) then
+      if is(path_str, identifier) then
         return true
       end
-      local current = path
-      path = get_parent(path)
-      if current == path then
+      local current = path_str
+      path_str = get_parent(path_str)
+      if current == path_str then
         return false
       end
     end
   end
 
   local function child(dir, identifier)
-    local path = get_parent(dir)
-    return is(path, identifier)
+    return is(get_parent(dir), identifier)
   end
 
   local function has(dir, identifier)
