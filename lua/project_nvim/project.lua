@@ -12,8 +12,10 @@ M.last_project = nil
 function M.find_lsp_root()
   -- Get lsp client for current buffer
   -- Returns nil or string
-  local buf_ft = vim.api.nvim_buf_get_option(0, "filetype")
-  local clients = vim.lsp.buf_get_clients()
+  local bufnr = vim.api.nvim_get_current_buf()
+
+  local buf_ft = vim.api.nvim_get_option_value("filetype", { buf = bufnr })
+  local clients = vim.lsp.get_clients({ bufnr = bufnr })
   if next(clients) == nil then
     return nil
   end
@@ -214,7 +216,9 @@ function M.get_project_root()
 end
 
 function M.is_file()
-  local buf_type = vim.api.nvim_buf_get_option(0, "buftype")
+  local bufnr = vim.api.nvim_get_current_buf()
+
+  local buf_type = vim.api.nvim_get_option_value("buftype", { buf = bufnr })
 
   local whitelisted_buf_type = { "", "acwrite" }
   local is_in_whitelist = false
