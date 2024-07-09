@@ -1,5 +1,5 @@
 local config = require("project_nvim.config")
-local uv = vim.loop
+local uv = vim.uv or vim.loop
 local M = {}
 
 M.datapath = vim.fn.stdpath("data") -- directory

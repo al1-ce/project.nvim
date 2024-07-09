@@ -2,7 +2,7 @@ local config = require("project_nvim.config")
 local history = require("project_nvim.utils.history")
 local glob = require("project_nvim.utils.globtopattern")
 local path = require("project_nvim.utils.path")
-local uv = vim.loop
+local uv = vim.uv or vim.loop
 local M = {}
 
 -- Internal states
@@ -14,8 +14,10 @@ M.last_project = nil
 function M.find_lsp_root()
   -- Get lsp client for current buffer
   -- Returns nil or string
-  local buf_ft = vim.api.nvim_buf_get_option(0, "filetype")
-  local clients = vim.lsp.buf_get_clients()
+  local bufnr = vim.api.nvim_get_current_buf()
+
+  local buf_ft = vim.api.nvim_get_option_value("filetype", { buf = bufnr })
+  local clients = vim.lsp.get_clients({ bufnr = bufnr })
   if next(clients) == nil then
     return nil
   end
@@ -41,12 +43,12 @@ function M.find_pattern_root()
   local last_dir_cache = ""
   local curr_dir_cache = {}
 
-  local function get_parent(path)
-    path = path:match("^(.*)/")
-    if path == "" then
-      path = "/"
+  local function get_parent(path_str)
+    path_str = path_str:match("^(.*)/")
+    if path_str == "" then
+      path_str = "/"
     end
-    return path
+    return path_str
   end
 
   local function get_files(file_dir)
@@ -74,22 +76,21 @@ function M.find_pattern_root()
   end
 
   local function sub(dir, identifier)
-    local path = get_parent(dir)
+    local path_str = get_parent(dir)
     while true do
-      if is(path, identifier) then
+      if is(path_str, identifier) then
         return true
       end
-      local current = path
-      path = get_parent(path)
-      if current == path then
+      local current = path_str
+      path_str = get_parent(path_str)
+      if current == path_str then
         return false
       end
     end
   end
 
   local function child(dir, identifier)
-    local path = get_parent(dir)
-    return is(path, identifier)
+    return is(get_parent(dir), identifier)
   end
 
   local function has(dir, identifier)
@@ -178,12 +179,12 @@ function M.set_pwd(dir, method)
 
     if vim.fn.getcwd() ~= dir then
       local scope_chdir = config.options.scope_chdir
-      if scope_chdir == 'global' then
+      if scope_chdir == "global" then
         vim.api.nvim_set_current_dir(dir)
-      elseif scope_chdir == 'tab' then
-        vim.cmd('tcd ' .. dir)
-      elseif scope_chdir == 'win' then
-        vim.cmd('lcd ' .. dir)
+      elseif scope_chdir == "tab" then
+        vim.cmd("tcd " .. dir)
+      elseif scope_chdir == "win" then
+        vim.cmd("lcd " .. dir)
       else
         return
       end
@@ -225,7 +226,9 @@ function M.get_current_project()
 end
 
 function M.is_file()
-  local buf_type = vim.api.nvim_buf_get_option(0, "buftype")
+  local bufnr = vim.api.nvim_get_current_buf()
+
+  local buf_type = vim.api.nvim_get_option_value("buftype", { buf = bufnr })
 
   local whitelisted_buf_type = { "", "acwrite" }
   local is_in_whitelist = false
@@ -262,7 +265,7 @@ end
 
 function M.add_project_manually()
   local current_dir = vim.fn.expand("%:p:h", true)
-  M.set_pwd(current_dir, 'manual')
+  M.set_pwd(current_dir, "manual")
 end
 
 function M.init()
